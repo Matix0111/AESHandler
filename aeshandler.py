@@ -1,5 +1,6 @@
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
+from enum import Enum, auto
 import binascii
 import derivehelper
 import base64
@@ -16,26 +17,40 @@ def get_data(data):
     
     return data
 
+class ENCODINGS(Enum):
+    BASE64 = auto()
+    HEX = auto()
+    RAW = auto()
+
 class AESHandler:
-    def __init__(self, key, mode, use_encoding=False, padding=False):
-        self.use_encoding = use_encoding
+    def __init__(self, key, mode, encoding=ENCODINGS.RAW, padding=False):
+        self.encoding = encoding
         self.padding = padding
-        if self.use_encoding:
-            try:
-                self.key = base64.b64decode(key)
-            except binascii.Error:
-                self.key = key
-        else:
-            self.key = key
+        self.key = key
         self.mode = mode
     
-    @staticmethod
-    def encode_data(data):
-        return base64.b64encode(get_data(data)).decode()
+    def encode_data(self, data):
+        if self.encoding == ENCODINGS.BASE64:
+            return base64.b64encode(get_data(data)).decode()
+        elif self.encoding == ENCODINGS.HEX:
+            return binascii.b2a_hex(get_data(data)).decode()
+        else:
+            return get_data(data)
     
-    @staticmethod
-    def decode_data(data):
-        return base64.b64decode(get_data(data)).decode()
+    def decode_data(self, data):
+        err = False
+        try:
+            if self.encoding == ENCODINGS.BASE64:
+                return base64.b64decode(get_data(data))
+            elif self.encoding == ENCODINGS.HEX:
+                return binascii.a2b_hex(get_data(data))
+            else:
+                return get_data(data)
+        except binascii.Error:
+            err = True
+        
+        if err:
+            raise ValueError("Failed to decode, encoding is wrong or ciphertext is incorrect.")
 
     @property
     def aes_key(self):
@@ -88,13 +103,10 @@ class AESHandler:
             if error:
                 raise ValueError(f'{error_message} Enable padding to fix this.')
 
-        if self.use_encoding:
-            return self.encode_data(ciphertext)
-        return ciphertext
+        return self.encode_data(ciphertext)
     
     def decrypt(self, ciphertext):
-        if self.use_encoding:
-            ciphertext = base64.b64decode(ciphertext)
+        ciphertext = self.decode_data(ciphertext)
         iv = ciphertext[:16]
         real_ciphertext = ciphertext[16:]
         _, dec = self.return_objects(iv)
