@@ -19,7 +19,9 @@ crypto_key = crypto_tuple[-1] # b'\x14\xe8\xf0\xcf\xf1\x16\x9d\xb6J\x9b\xc0\xfe\
 AESHandler supports all AES modes. Such as CBC, CFB, XTS, and so on.
 Using CBC in this instance.
 This may require the padding=True argument for PKCS7 padding.
-use_encoding=True returns ciphertexts in base64 format.
+encoding=aeshandler.ENCODINGS.BASE64 will return ciphertexts in base64 format.
+encoding=aeshandler.ENCODINGS.HEX will return ciphertexts in hex format.
+encoding=aeshandler.ENCODINGS.RAW will return ciphertexts in raw format. (this is the default)
 '''
 a = aeshandler.AESHandler(crypto_key, aeshandler.modes.CBC, padding=True, encoding=aeshandler.ENCODINGS.BASE64)
 ciphertext = a.encrypt('Hello!') # M4ENqqe0m0ys4a7e1fnWHtJD+DbGNY5ckfbJBShxkJ0=
